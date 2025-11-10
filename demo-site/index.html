@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntraMind Widget Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            color: white;
+            padding: 60px 20px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px auto;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-card h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .demo-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .code-block .comment {
+            color: #64748b;
+        }
+
+        .code-block .string {
+            color: #86efac;
+        }
+
+        .code-block .keyword {
+            color: #fb923c;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .cta h3 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 0;
+        }
+
+        .notice {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #78350f;
+        }
+
+        .notice strong {
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>🚀 IntraMind Widget Demo</h1>
+            <p>Embeddable AI-Powered Knowledge Base Search</p>
+            <p style="font-size: 1rem; opacity: 0.8;">
+                Add intelligent document search to any website with just two lines of code
+            </p>
+        </div>
+
+        <div class="demo-card">
+            <h2>📖 About This Demo</h2>
+            <p>
+                This page demonstrates the IntraMind embeddable chat widget. 
+                Look for the chat button in the bottom-right corner! 
+            </p>
+            
+            <div class="notice">
+                <strong>🏗️ Development Status:</strong> This is the initial setup phase. 
+                The widget currently shows a placeholder UI. Full functionality (chat, upload, collections) 
+                will be implemented in the upcoming phases.
+            </div>
+
+            <h3 style="margin-top: 2rem; color: #333;">Installation</h3>
+            <p>Add IntraMind to your website with just two lines:</p>
+            
+            <div class="code-block">
+<span class="comment">&lt;!-- Add the widget script --&gt;</span>
+<span class="keyword">&lt;script</span> src=<span class="string">"https://your-domain.com/intramind-widget.js"</span><span class="keyword">&gt;&lt;/script&gt;</span>
+
+<span class="comment">&lt;!-- Initialize with your config --&gt;</span>
+<span class="keyword">&lt;script&gt;</span>
+  IntraMind.init({
+    apiKey: <span class="string">'your-api-key'</span>,
+    collection: <span class="string">'company-docs'</span>,
+    theme: <span class="string">'light'</span>,
+    primaryColor: <span class="string">'#667eea'</span>
+  });
+<span class="keyword">&lt;/script&gt;</span>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <h2>✨ Features</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>💬 Conversational Search</h3>
+                    <p>Natural language queries with AI-powered responses and relevant document retrieval</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>📤 Document Upload</h3>
+                    <p>Drag-and-drop document ingestion directly in the widget (PDF, DOCX, PPTX, etc.)</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>📁 Collection Management</h3>
+                    <p>Browse and manage document collections right from the widget</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🎨 Fully Customizable</h3>
+                    <p>Theme colors, position, features, and text - all configurable via JavaScript API</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🔐 Secure</h3>
+                    <p>API key authentication with rate limiting and secure communication</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>📦 Lightweight</h3>
+                    <p>~30KB gzipped bundle - fast loading with minimal performance impact</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <h2>🎯 Use Cases</h2>
+            <p><strong>Perfect for:</strong></p>
+            <ul style="margin-left: 20px; color: #666;">
+                <li style="margin: 10px 0;">Internal company intranets and wikis</li>
+                <li style="margin: 10px 0;">Admin panels and dashboards</li>
+                <li style="margin: 10px 0;">Documentation sites</li>
+                <li style="margin: 10px 0;">Knowledge management systems</li>
+                <li style="margin: 10px 0;">Enterprise portals</li>
+            </ul>
+        </div>
+
+        <div class="cta">
+            <h3>🎉 Try It Now!</h3>
+            <p>
+                Click the chat button in the bottom-right corner to see the widget in action.
+                Full features coming soon!
+            </p>
+        </div>
+    </div>
+
+    <!-- IntraMind Widget Integration -->
+    <!-- In Phase 1, this will load from the build output -->
+    <!-- For now, this is a placeholder showing the intended usage -->
+    <script>
+        // NOTE: Widget will be loaded from ../widget/dist/intramind-widget.js after build
+        console.log('IntraMind Widget Demo Page Loaded');
+        console.log('Widget will be initialized once built in Phase 1');
+        
+        // Placeholder config for documentation
+        const exampleConfig = {
+            apiKey: 'demo-api-key',
+            collection: 'demo-collection',
+            theme: 'light',
+            primaryColor: '#667eea',
+            position: 'bottom-right',
+            features: {
+                chat: true,
+                upload: true,
+                collections: true
+            },
+            placeholder: 'Ask about our documents...',
+            welcomeMessage: 'Hi! How can I help you find information?'
+        };
+        
+        console.log('Example configuration:', exampleConfig);
+    </script>
+
+    <!-- 
+    Once the widget is built, you would add:
+    <script src="../widget/dist/intramind-widget.js"></script>
+    <script>
+        IntraMind.init({
+            apiKey: 'demo-api-key',
+            collection: 'demo-collection',
+            primaryColor: '#667eea'
+        });
+    </script>
+    -->
+</body>
+</html>
+

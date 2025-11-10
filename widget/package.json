@@ -1,0 +1,32 @@
+{
+  "name": "intramind-widget",
+  "version": "0.1.0",
+  "description": "Embeddable chat widget for IntraMind knowledge base search",
+  "type": "module",
+  "main": "dist/intramind-widget.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "widget",
+    "chat",
+    "ai",
+    "search",
+    "knowledge-base"
+  ],
+  "author": "Jessica Kelly",
+  "license": "MIT",
+  "dependencies": {
+    "preact": "^10.19.2"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.7.0",
+    "@types/node": "^20.10.4",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7"
+  }
+}
+
