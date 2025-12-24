@@ -1,6 +1,6 @@
 /**
  * ChatWindow Component
- * Main chat window container with tabs for chat and upload
+ * Main chat window container with tabs for chat, upload, and collections
  */
 
 import { h } from 'preact';
@@ -8,12 +8,13 @@ import type { Message, UploadFile, Collection } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import UploadTab from './UploadTab';
+import CollectionsTab from './CollectionsTab';
 
 interface ChatWindowProps {
   isOpen: boolean;
   onClose: () => void;
-  currentTab: 'chat' | 'upload';
-  onTabChange: (tab: 'chat' | 'upload') => void;
+  currentTab: 'chat' | 'upload' | 'collections';
+  onTabChange: (tab: 'chat' | 'upload' | 'collections') => void;
 
   // Chat props
   messages: Message[];
@@ -31,11 +32,18 @@ interface ChatWindowProps {
   onStartUpload: () => void;
   isUploading: boolean;
 
+  // Collections props
+  onCreateCollection: (name: string, description?: string) => void;
+  onDeleteCollection: (name: string) => void;
+  onRefreshCollections: () => void;
+  isLoadingCollections: boolean;
+
   // Common props
   primaryColor: string;
   welcomeMessage: string;
   placeholder: string;
   showUploadTab: boolean;
+  showCollectionsTab: boolean;
 }
 
 export default function ChatWindow(props: ChatWindowProps) {
@@ -47,7 +55,10 @@ export default function ChatWindow(props: ChatWindowProps) {
     onTabChange,
     primaryColor,
     showUploadTab,
+    showCollectionsTab,
   } = props;
+
+  const showTabs = showUploadTab || showCollectionsTab;
 
   return (
     <div
@@ -119,7 +130,7 @@ export default function ChatWindow(props: ChatWindowProps) {
         </div>
 
         {/* Tab navigation */}
-        {showUploadTab && (
+        {showTabs && (
           <div
             style={{
               display: 'flex',
@@ -143,40 +154,58 @@ export default function ChatWindow(props: ChatWindowProps) {
             >
               💬 Chat
             </button>
-            <button
-              onClick={() => onTabChange('upload')}
-              style={{
-                flex: 1,
-                padding: '12px',
-                backgroundColor: currentTab === 'upload' ? 'rgba(255,255,255,0.2)' : 'transparent',
-                border: 'none',
-                borderBottom: currentTab === 'upload' ? '3px solid white' : '3px solid transparent',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              📤 Upload
-            </button>
+            {showUploadTab && (
+              <button
+                onClick={() => onTabChange('upload')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: currentTab === 'upload' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  border: 'none',
+                  borderBottom: currentTab === 'upload' ? '3px solid white' : '3px solid transparent',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                📤 Upload
+              </button>
+            )}
+            {showCollectionsTab && (
+              <button
+                onClick={() => onTabChange('collections')}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: currentTab === 'collections' ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  border: 'none',
+                  borderBottom: currentTab === 'collections' ? '3px solid white' : '3px solid transparent',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                📁 Collections
+              </button>
+            )}
           </div>
         )}
       </div>
 
       {/* Tab content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {currentTab === 'chat' ? (
+        {currentTab === 'chat' && (
           <>
-            {/* Message List */}
             <MessageList
               messages={props.messages}
               primaryColor={primaryColor}
               welcomeMessage={props.welcomeMessage}
               isLoading={props.isLoading}
             />
-
-            {/* Input */}
             <MessageInput
               onSend={props.onSendMessage}
               placeholder={props.placeholder}
@@ -184,8 +213,9 @@ export default function ChatWindow(props: ChatWindowProps) {
               primaryColor={primaryColor}
             />
           </>
-        ) : (
-          /* Upload Tab */
+        )}
+
+        {currentTab === 'upload' && (
           <UploadTab
             uploadFiles={props.uploadFiles}
             collections={props.collections}
@@ -196,6 +226,17 @@ export default function ChatWindow(props: ChatWindowProps) {
             onCollectionSelect={props.onCollectionSelect}
             onStartUpload={props.onStartUpload}
             isUploading={props.isUploading}
+            primaryColor={primaryColor}
+          />
+        )}
+
+        {currentTab === 'collections' && (
+          <CollectionsTab
+            collections={props.collections}
+            onCreateCollection={props.onCreateCollection}
+            onDeleteCollection={props.onDeleteCollection}
+            onRefresh={props.onRefreshCollections}
+            isLoading={props.isLoadingCollections}
             primaryColor={primaryColor}
           />
         )}

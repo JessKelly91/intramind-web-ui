@@ -20,7 +20,7 @@ interface AppProps {
 export default function App({ config }: AppProps) {
   // UI state
   const [isOpen, setIsOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'chat' | 'upload'>('chat');
+  const [currentTab, setCurrentTab] = useState<'chat' | 'upload' | 'collections'>('chat');
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,6 +32,9 @@ export default function App({ config }: AppProps) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Collections state
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   // API client
   const [apiClient] = useState(() => new APIClient(config));
@@ -70,9 +73,9 @@ export default function App({ config }: AppProps) {
     }
   }, [messages, conversationId, config.apiKey, config.collection]);
 
-  // Load collections when upload tab is opened
+  // Load collections when upload or collections tab is opened
   useEffect(() => {
-    if (currentTab === 'upload' && collections.length === 0) {
+    if ((currentTab === 'upload' || currentTab === 'collections') && collections.length === 0) {
       loadCollections();
     }
   }, [currentTab]);
@@ -81,6 +84,7 @@ export default function App({ config }: AppProps) {
    * Load available collections
    */
   const loadCollections = async () => {
+    setIsLoadingCollections(true);
     try {
       const cols = await apiClient.getCollections();
       setCollections(cols);
@@ -95,6 +99,41 @@ export default function App({ config }: AppProps) {
           createdAt: new Date().toISOString(),
         }
       ]);
+    } finally {
+      setIsLoadingCollections(false);
+    }
+  };
+
+  /**
+   * Create a new collection
+   */
+  const handleCreateCollection = async (name: string, description?: string) => {
+    try {
+      const newCollection = await apiClient.createCollection(name, description);
+      setCollections(prev => [...prev, newCollection]);
+      console.log('✅ Collection created', { name });
+    } catch (error) {
+      console.error('❌ Failed to create collection:', error);
+      alert(`Failed to create collection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  /**
+   * Delete a collection
+   */
+  const handleDeleteCollection = async (name: string) => {
+    try {
+      await apiClient.deleteCollection(name);
+      setCollections(prev => prev.filter(c => c.name !== name));
+      console.log('✅ Collection deleted', { name });
+
+      // If deleted collection was selected, switch to first available
+      if (selectedCollection === name && collections.length > 1) {
+        setSelectedCollection(collections.find(c => c.name !== name)?.name || '');
+      }
+    } catch (error) {
+      console.error('❌ Failed to delete collection:', error);
+      alert(`Failed to delete collection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -256,6 +295,7 @@ export default function App({ config }: AppProps) {
   };
 
   const showUploadTab = config.features?.upload !== false;
+  const showCollectionsTab = config.features?.collections !== false;
 
   return (
     <div
@@ -312,11 +352,17 @@ export default function App({ config }: AppProps) {
         onCollectionSelect={setSelectedCollection}
         onStartUpload={handleStartUpload}
         isUploading={isUploading}
+        // Collections props
+        onCreateCollection={handleCreateCollection}
+        onDeleteCollection={handleDeleteCollection}
+        onRefreshCollections={loadCollections}
+        isLoadingCollections={isLoadingCollections}
         // Common props
         primaryColor={config.primaryColor || '#4F46E5'}
         welcomeMessage={config.welcomeMessage || 'How can I help you?'}
         placeholder={config.placeholder || 'Ask a question...'}
         showUploadTab={showUploadTab}
+        showCollectionsTab={showCollectionsTab}
       />
 
       {/* Chat Button */}
