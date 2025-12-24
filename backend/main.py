@@ -66,12 +66,12 @@ async def health_check():
 async def serve_widget():
     """
     Serve the widget JavaScript bundle
-    
+
     In production, this should serve from a CDN or static file server.
     For development, serves from the build output.
     """
-    widget_path = os.path.join(os.path.dirname(__file__), "..", "widget", "dist", "intramind-widget.js")
-    
+    widget_path = os.path.join(os.path.dirname(__file__), "..", "widget", "dist", "intramind-widget.iife.js")
+
     if os.path.exists(widget_path):
         return FileResponse(
             widget_path,

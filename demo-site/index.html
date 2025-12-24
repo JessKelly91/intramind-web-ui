@@ -164,9 +164,9 @@
             </p>
             
             <div class="notice">
-                <strong>🏗️ Development Status:</strong> This is the initial setup phase. 
-                The widget currently shows a placeholder UI. Full functionality (chat, upload, collections) 
-                will be implemented in the upcoming phases.
+                <strong>✅ Phase 2 Complete!</strong> The chat interface is now fully functional!
+                Click the chat button to ask questions and get AI-powered responses with document citations.
+                Features like document upload and collection management are coming in Phase 3 & 4.
             </div>
 
             <h3 style="margin-top: 2rem; color: #333;">Installation</h3>
@@ -250,9 +250,8 @@
     <script>
         // Try to load widget from multiple possible locations
         const widgetPaths = [
-            '../widget/dist/intramind-widget.js',  // Local build
-            'http://localhost:5173/src/index.ts',  // Vite dev server (if running)
-            'http://localhost:8001/widget.js'      // Backend dev server
+            '../widget/dist/intramind-widget.iife.js',  // Local build (IIFE format)
+            'http://localhost:8001/widget.js'            // Backend dev server
         ];
         
         let widgetLoaded = false;
@@ -292,18 +291,31 @@
         
         // Try to load widget script dynamically
         function tryLoadWidget() {
-            const script = document.createElement('script');
-            script.src = widgetPaths[0];  // Try local build first
-            script.onload = () => {
-                console.log('✅ Widget script loaded');
-                loadWidget();
-            };
-            script.onerror = () => {
-                console.warn('⚠️ Could not load widget from build output. Make sure to build first:');
-                console.warn('   cd widget && npm install && npm run build');
-                // Widget will still try to initialize if manually included
-            };
-            document.head.appendChild(script);
+            let attemptIndex = 0;
+
+            function tryPath(index) {
+                if (index >= widgetPaths.length) {
+                    console.error('❌ Failed to load widget from any source');
+                    console.log('💡 Make sure backend is running: cd backend && uvicorn main:app --reload --port 8001');
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = widgetPaths[index];
+                script.onload = () => {
+                    console.log('✅ Widget script loaded from:', widgetPaths[index]);
+                    loadWidget();
+                };
+                script.onerror = () => {
+                    console.warn('⚠️ Could not load from:', widgetPaths[index]);
+                    // Remove failed script and try next path
+                    document.head.removeChild(script);
+                    tryPath(index + 1);
+                };
+                document.head.appendChild(script);
+            }
+
+            tryPath(0);
         }
         
         // Wait for DOM to be ready
