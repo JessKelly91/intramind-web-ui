@@ -1,14 +1,15 @@
 /**
  * Main App Component for IntraMind Widget
  *
- * Manages chat state, API communication, and localStorage persistence
+ * Manages chat state, upload state, API communication, and localStorage persistence
  */
 
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import type { WidgetConfig, Message } from './types';
+import type { WidgetConfig, Message, UploadFile, Collection } from './types';
 import { APIClient } from './services/api';
 import { loadSession, saveSession, generateConversationId } from './utils/storage';
+import { validateFile } from './utils/fileValidation';
 import ChatButton from './components/ChatButton';
 import ChatWindow from './components/ChatWindow';
 
@@ -17,10 +18,22 @@ interface AppProps {
 }
 
 export default function App({ config }: AppProps) {
+  // UI state
   const [isOpen, setIsOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'chat' | 'upload'>('chat');
+
+  // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Upload state
+  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  // API client
   const [apiClient] = useState(() => new APIClient(config));
 
   // Load session from localStorage on mount
@@ -40,6 +53,9 @@ export default function App({ config }: AppProps) {
       setConversationId(newConvId);
       console.log('✨ Started new conversation', { conversationId: newConvId });
     }
+
+    // Set initial collection
+    setSelectedCollection(config.collection || 'default');
   }, [config.apiKey, config.collection]);
 
   // Save session to localStorage whenever messages change
@@ -53,6 +69,34 @@ export default function App({ config }: AppProps) {
       });
     }
   }, [messages, conversationId, config.apiKey, config.collection]);
+
+  // Load collections when upload tab is opened
+  useEffect(() => {
+    if (currentTab === 'upload' && collections.length === 0) {
+      loadCollections();
+    }
+  }, [currentTab]);
+
+  /**
+   * Load available collections
+   */
+  const loadCollections = async () => {
+    try {
+      const cols = await apiClient.getCollections();
+      setCollections(cols);
+      console.log('✅ Loaded collections', { count: cols.length });
+    } catch (error) {
+      console.error('❌ Failed to load collections:', error);
+      // Set fallback collection
+      setCollections([
+        {
+          name: config.collection || 'default',
+          documentCount: 0,
+          createdAt: new Date().toISOString(),
+        }
+      ]);
+    }
+  };
 
   /**
    * Handle sending a message
@@ -115,6 +159,104 @@ export default function App({ config }: AppProps) {
     }
   };
 
+  /**
+   * Handle files selected for upload
+   */
+  const handleFilesSelected = (files: File[]) => {
+    const newUploadFiles: UploadFile[] = files.map(file => {
+      // Validate file
+      const validation = validateFile(
+        file,
+        config.allowedFileTypes,
+        config.maxFileSize
+      );
+
+      return {
+        file,
+        status: validation.valid ? 'pending' : 'error',
+        progress: 0,
+        error: validation.error,
+      };
+    });
+
+    setUploadFiles(prev => [...prev, ...newUploadFiles]);
+    console.log('📁 Files selected', { count: newUploadFiles.length });
+  };
+
+  /**
+   * Handle removing a file from upload queue
+   */
+  const handleRemoveFile = (index: number) => {
+    setUploadFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Handle retrying a failed upload
+   */
+  const handleRetryFile = (index: number) => {
+    setUploadFiles(prev => prev.map((file, i) =>
+      i === index ? { ...file, status: 'pending', progress: 0, error: undefined } : file
+    ));
+  };
+
+  /**
+   * Handle starting upload
+   */
+  const handleStartUpload = async () => {
+    const filesToUpload = uploadFiles.filter(f => f.status === 'pending');
+
+    if (filesToUpload.length === 0) return;
+
+    setIsUploading(true);
+
+    // Upload files in sequence (could be parallel with Promise.all)
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const uploadFile = uploadFiles[i];
+
+      if (uploadFile.status !== 'pending') continue;
+
+      // Mark as uploading
+      setUploadFiles(prev => prev.map((f, idx) =>
+        idx === i ? { ...f, status: 'uploading', progress: 0 } : f
+      ));
+
+      try {
+        await apiClient.uploadDocument({
+          file: uploadFile.file,
+          collection: selectedCollection,
+          onProgress: (progress) => {
+            setUploadFiles(prev => prev.map((f, idx) =>
+              idx === i ? { ...f, progress } : f
+            ));
+          }
+        });
+
+        // Mark as success
+        setUploadFiles(prev => prev.map((f, idx) =>
+          idx === i ? { ...f, status: 'success', progress: 100 } : f
+        ));
+
+        console.log('✅ File uploaded successfully', { filename: uploadFile.file.name });
+      } catch (error) {
+        console.error('❌ File upload failed:', error);
+
+        // Mark as error
+        setUploadFiles(prev => prev.map((f, idx) =>
+          idx === i ? {
+            ...f,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Upload failed'
+          } : f
+        ));
+      }
+    }
+
+    setIsUploading(false);
+    console.log('✅ Upload batch complete');
+  };
+
+  const showUploadTab = config.features?.upload !== false;
+
   return (
     <div
       style={{
@@ -154,12 +296,27 @@ export default function App({ config }: AppProps) {
       <ChatWindow
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        // Chat props
         messages={messages}
         onSendMessage={handleSendMessage}
+        isLoading={isLoading}
+        // Upload props
+        uploadFiles={uploadFiles}
+        collections={collections}
+        selectedCollection={selectedCollection}
+        onFilesSelected={handleFilesSelected}
+        onRemoveFile={handleRemoveFile}
+        onRetryFile={handleRetryFile}
+        onCollectionSelect={setSelectedCollection}
+        onStartUpload={handleStartUpload}
+        isUploading={isUploading}
+        // Common props
         primaryColor={config.primaryColor || '#4F46E5'}
         welcomeMessage={config.welcomeMessage || 'How can I help you?'}
         placeholder={config.placeholder || 'Ask a question...'}
-        isLoading={isLoading}
+        showUploadTab={showUploadTab}
       />
 
       {/* Chat Button */}
