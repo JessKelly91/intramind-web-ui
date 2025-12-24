@@ -246,43 +246,73 @@
     </div>
 
     <!-- IntraMind Widget Integration -->
-    <!-- In Phase 1, this will load from the build output -->
-    <!-- For now, this is a placeholder showing the intended usage -->
+    <!-- Load widget from build output or development server -->
     <script>
-        // NOTE: Widget will be loaded from ../widget/dist/intramind-widget.js after build
-        console.log('IntraMind Widget Demo Page Loaded');
-        console.log('Widget will be initialized once built in Phase 1');
+        // Try to load widget from multiple possible locations
+        const widgetPaths = [
+            '../widget/dist/intramind-widget.js',  // Local build
+            'http://localhost:5173/src/index.ts',  // Vite dev server (if running)
+            'http://localhost:8001/widget.js'      // Backend dev server
+        ];
         
-        // Placeholder config for documentation
-        const exampleConfig = {
-            apiKey: 'demo-api-key',
-            collection: 'demo-collection',
-            theme: 'light',
-            primaryColor: '#667eea',
-            position: 'bottom-right',
-            features: {
-                chat: true,
-                upload: true,
-                collections: true
-            },
-            placeholder: 'Ask about our documents...',
-            welcomeMessage: 'Hi! How can I help you find information?'
-        };
+        let widgetLoaded = false;
         
-        console.log('Example configuration:', exampleConfig);
+        function loadWidget() {
+            // Configuration
+            const config = {
+                apiKey: 'demo-api-key',
+                collection: 'demo-collection',
+                theme: 'light',
+                primaryColor: '#667eea',
+                position: 'bottom-right',
+                features: {
+                    chat: true,
+                    upload: true,
+                    collections: true
+                },
+                placeholder: 'Ask about our documents...',
+                welcomeMessage: 'Hi! How can I help you find information?',
+                apiUrl: 'http://localhost:8001'  // Backend API URL
+            };
+            
+            // Check if IntraMind is already available (from script tag)
+            if (typeof window.IntraMind !== 'undefined') {
+                try {
+                    window.IntraMind.init(config);
+                    widgetLoaded = true;
+                    console.log('✅ IntraMind widget initialized successfully');
+                } catch (error) {
+                    console.error('❌ Failed to initialize widget:', error);
+                }
+            } else {
+                console.warn('⚠️ IntraMind widget not found. Please build the widget first:');
+                console.warn('   cd widget && npm install && npm run build');
+            }
+        }
+        
+        // Try to load widget script dynamically
+        function tryLoadWidget() {
+            const script = document.createElement('script');
+            script.src = widgetPaths[0];  // Try local build first
+            script.onload = () => {
+                console.log('✅ Widget script loaded');
+                loadWidget();
+            };
+            script.onerror = () => {
+                console.warn('⚠️ Could not load widget from build output. Make sure to build first:');
+                console.warn('   cd widget && npm install && npm run build');
+                // Widget will still try to initialize if manually included
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', tryLoadWidget);
+        } else {
+            tryLoadWidget();
+        }
     </script>
-
-    <!-- 
-    Once the widget is built, you would add:
-    <script src="../widget/dist/intramind-widget.js"></script>
-    <script>
-        IntraMind.init({
-            apiKey: 'demo-api-key',
-            collection: 'demo-collection',
-            primaryColor: '#667eea'
-        });
-    </script>
-    -->
 </body>
 </html>
 

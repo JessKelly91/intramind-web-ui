@@ -13,20 +13,17 @@ export default defineConfig({
   build: {
     // Output as a single bundle for embedding
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(__dirname, 'src/index.tsx'),
       name: 'IntraMind',
       fileName: 'intramind-widget',
       formats: ['iife'], // Self-executing function for script tag
     },
     // Inline CSS into JS bundle
     cssCodeSplit: false,
-    // Optimize bundle
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-      },
-    },
+    // Optimize bundle (using esbuild - faster and built-in)
+    minify: 'esbuild',
+    // Note: To remove console.logs, we can use esbuild's drop option
+    // or install terser if more advanced minification is needed
     // Source maps (external for debugging)
     sourcemap: true,
   },
