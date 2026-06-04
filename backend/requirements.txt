@@ -1,14 +1,23 @@
 # IntraMind Web UI Backend Dependencies
 
 # FastAPI and server
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+# Bumped to >=0.115.0: that release moved FastAPI's form-data backend to the
+# new `python_multipart` import path (instead of the squatted-on `multipart`
+# namespace), which lets us coexist in a single venv with `multipart` 1.x
+# pulled in transitively by Evidently / litestar (Step 5 of the Free RAI
+# Stack). Without this bump, importing the FastAPI app raises
+# "Form data requires 'python-multipart' to be installed".
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
 
 # HTTP client for AI Agent communication
 httpx==0.25.1
 
 # File upload support
-python-multipart==0.0.6
+# Bumped to >=0.0.12: earlier releases install to the `multipart/` namespace
+# and conflict with the unrelated `multipart` package that Evidently (Step 5
+# of the Free RAI Stack) pulls in transitively via litestar.
+python-multipart>=0.0.12
 
 # Configuration management
 pydantic-settings==2.1.0
@@ -23,4 +32,10 @@ python-dotenv==1.0.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx[test]==0.25.1
+
+# Observability / Responsible AI tracing (Step 1: Phoenix)
+arize-phoenix-otel>=0.6.0
+openinference-instrumentation-langchain>=0.1.0
+opentelemetry-instrumentation-fastapi>=0.46b0
+opentelemetry-instrumentation-httpx>=0.46b0
 

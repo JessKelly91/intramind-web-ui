@@ -2,9 +2,21 @@
 Collections API endpoints
 """
 
+import os
+import sys
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional, List
+import logging
+
+# Add AI Agent to Python path
+AI_AGENT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-agent", "src")
+sys.path.insert(0, AI_AGENT_PATH)
+
+from tools.api_client import APIGatewayClient
+import httpx
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/collections", tags=["collections"])
 
@@ -27,7 +39,7 @@ async def list_collections(
 ):
     """
     Get list of all collections
-    
+
     This endpoint proxies to the API Gateway
     """
     # Validate API key (placeholder - will be implemented properly)
@@ -37,17 +49,38 @@ async def list_collections(
     else:
         # TODO: Validate API key against database/service
         pass
-    
-    # TODO: In Phase 4, integrate with API Gateway
-    # For now, return mock data
-    return [
-        Collection(
-            name="demo-collection",
-            documentCount=0,
-            createdAt="2025-01-01T00:00:00Z",
-            description="Demo collection"
+
+    try:
+        async with APIGatewayClient() as client:
+            # Get collections from API Gateway
+            collections_response = await client.list_collections()
+
+            # Convert to frontend format
+            collections = [
+                Collection(
+                    name=col.collection_name,
+                    documentCount=col.vector_count,
+                    createdAt=col.created_at or "2025-01-01T00:00:00Z",
+                    description=col.description
+                )
+                for col in collections_response
+            ]
+
+            logger.info(f"✅ Listed {len(collections)} collections")
+            return collections
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"❌ Failed to list collections: {e}")
+        raise HTTPException(
+            status_code=e.response.status_code if e.response else 500,
+            detail=f"Failed to list collections: {str(e)}"
         )
-    ]
+    except Exception as e:
+        logger.error(f"❌ Unexpected error listing collections: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 
 @router.post("", response_model=Collection)
@@ -57,7 +90,7 @@ async def create_collection(
 ):
     """
     Create a new collection
-    
+
     This endpoint proxies to the API Gateway
     """
     # Validate API key
@@ -66,15 +99,38 @@ async def create_collection(
     else:
         # TODO: Validate API key
         pass
-    
-    # TODO: In Phase 4, integrate with API Gateway
-    # For now, return mock response
-    return Collection(
-        name=request.name,
-        documentCount=0,
-        createdAt="2025-01-01T00:00:00Z",
-        description=request.description
-    )
+
+    try:
+        async with APIGatewayClient() as client:
+            # Create collection via API Gateway
+            collection_response = await client.create_collection(
+                name=request.name,
+                description=request.description
+            )
+
+            # Convert to frontend format
+            collection = Collection(
+                name=collection_response.collection_name,
+                documentCount=collection_response.vector_count,
+                createdAt=collection_response.created_at or "2025-01-01T00:00:00Z",
+                description=collection_response.description
+            )
+
+            logger.info(f"✅ Created collection: {request.name}")
+            return collection
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"❌ Failed to create collection: {e}")
+        raise HTTPException(
+            status_code=e.response.status_code if e.response else 500,
+            detail=f"Failed to create collection: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"❌ Unexpected error creating collection: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 
 @router.delete("/{collection_name}")
@@ -84,7 +140,7 @@ async def delete_collection(
 ):
     """
     Delete a collection
-    
+
     This endpoint proxies to the API Gateway
     """
     # Validate API key
@@ -93,8 +149,31 @@ async def delete_collection(
     else:
         # TODO: Validate API key
         pass
-    
-    # TODO: In Phase 4, integrate with API Gateway
-    # For now, return success
-    return {"success": True, "message": f"Collection '{collection_name}' deleted"}
+
+    try:
+        async with APIGatewayClient() as client:
+            # Delete collection via API Gateway
+            result = await client.delete_collection(collection_name)
+
+            logger.info(f"✅ Deleted collection: {collection_name}")
+            return {"success": True, "message": f"Collection '{collection_name}' deleted"}
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"❌ Failed to delete collection: {e}")
+        # If 404, collection doesn't exist
+        if e.response and e.response.status_code == 404:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Collection '{collection_name}' not found"
+            )
+        raise HTTPException(
+            status_code=e.response.status_code if e.response else 500,
+            detail=f"Failed to delete collection: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"❌ Unexpected error deleting collection: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 

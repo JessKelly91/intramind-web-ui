@@ -43,11 +43,25 @@ class SearchResult(BaseModel):
     metadata: dict
 
 
+class SafetyFlag(BaseModel):
+    """Output safety metadata when Llama Guard hard-blocks a response.
+
+    Surfaced so the widget *could* render a generic blocked banner. The
+    original (flagged) response is never included; ``response`` already
+    contains the templated fallback text.
+    """
+
+    flagged: bool
+    categories: List[str] = []
+    checked_at: Optional[str] = None
+
+
 class ChatResponse(BaseModel):
     response: str
     citations: List[SearchResult]
     conversationId: str
     queryComplexity: Optional[str] = None
+    safetyFlag: Optional[SafetyFlag] = None
 
 
 @router.post("", response_model=ChatResponse)
@@ -121,11 +135,25 @@ async def chat(
 
         logging.info(f"Search completed: {len(citations)} citations found")
 
+        # Surface output safety metadata (Step 4: Llama Guard). When flagged,
+        # the agent has already replaced the response with a templated
+        # fallback and discarded citations - we just expose the metadata so
+        # clients can render a generic banner if desired.
+        safety_flag_payload: Optional[SafetyFlag] = None
+        sf = result.get("safety_flag")
+        if isinstance(sf, dict):
+            safety_flag_payload = SafetyFlag(
+                flagged=bool(sf.get("flagged", False)),
+                categories=list(sf.get("categories") or []),
+                checked_at=sf.get("checked_at"),
+            )
+
         return ChatResponse(
             response=response_text,
             citations=citations,
             conversationId=conversation_id,
-            queryComplexity=query_complexity
+            queryComplexity=query_complexity,
+            safetyFlag=safety_flag_payload,
         )
 
     except Exception as e:
