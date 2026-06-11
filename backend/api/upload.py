@@ -2,14 +2,13 @@
 Document upload API endpoints - Integrates with AI Agent ingestion workflow
 """
 
-from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 import os
 import sys
 import logging
 import tempfile
-import asyncio
 
 # Add AI Agent to Python path
 AI_AGENT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-agent", "src")
@@ -23,6 +22,9 @@ try:
 except ImportError as e:
     logging.warning(f"AI Agent not available: {e}. Upload will return mock responses.")
     AI_AGENT_AVAILABLE = False
+
+from auth import require_tenant
+from tenancy import Tenant
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -53,20 +55,15 @@ def validate_file_type(filename: str) -> bool:
 async def upload_document(
     file: UploadFile = File(...),
     collection: str = Form(...),
-    x_api_key: str = Header(..., alias="X-API-Key")
+    tenant: Tenant = Depends(require_tenant),
 ):
     """
     Upload a document for ingestion
 
-    This endpoint proxies to the AI Agent ingestion workflow
+    This endpoint proxies to the AI Agent ingestion workflow and stores the
+    document inside the calling tenant's collection namespace.
     """
-    # Validate API key
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="API key required")
-
-    # In development, allow demo key
-    if x_api_key not in ["demo-api-key", "test-api-key"]:
-        logging.warning(f"Unvalidated API key used: {x_api_key[:10]}...")
+    namespaced_collection = tenant.namespaced(collection)
 
     # Validate file
     if not file.filename:
@@ -96,7 +93,10 @@ async def upload_document(
                 error=f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds maximum allowed size (10MB)"
             )
 
-        logging.info(f"Processing upload: {file.filename} ({file_size} bytes) to collection '{collection}'")
+        logging.info(
+            f"Processing upload for tenant '{tenant.tenant_id}': {file.filename} "
+            f"({file_size} bytes) to collection '{namespaced_collection}'"
+        )
 
         # If AI Agent is not available, return mock response
         if not AI_AGENT_AVAILABLE:
@@ -120,7 +120,7 @@ async def upload_document(
             logging.info(f"Starting ingestion for {file.filename}")
             result = await agent.ingest_document(
                 file_path=tmp_file_path,
-                collection_name=collection,
+                collection_name=namespaced_collection,
                 original_filename=file.filename
             )
 

@@ -24,8 +24,11 @@ if _AI_AGENT_SRC not in sys.path:
 # Note: Run with `uvicorn main:app` from the backend directory
 # Or set PYTHONPATH: `PYTHONPATH=. uvicorn backend.main:app`
 from api import chat, upload, collections, validate
+from config import get_settings
 
 logger = logging.getLogger(__name__)
+
+settings = get_settings()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -34,14 +37,30 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS configuration
-# In development, allow all origins. In production, configure specific origins.
+# CORS configuration.
+# Origins are driven by WEB_UI_CORS_ALLOWED_ORIGINS (comma-separated). We never
+# combine a wildcard origin with credentials (the browser rejects that, and it
+# is unsafe). In dev mode we fall back to common localhost origins if none are
+# explicitly configured; otherwise an empty list means no cross-origin access.
+_cors_origins = settings.cors_origins_list
+if not _cors_origins and settings.auth_dev_mode:
+    _cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8001",
+        "http://127.0.0.1:5173",
+    ]
+    logger.warning(
+        "WEB_UI_CORS_ALLOWED_ORIGINS not set; using localhost dev defaults "
+        "because WEB_UI_AUTH_DEV_MODE is on."
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Configure for production (use environment variable)
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 # Include API routers

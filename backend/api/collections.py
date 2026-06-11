@@ -1,10 +1,8 @@
-"""
-Collections API endpoints
-"""
+"""Collections API endpoints (tenant-scoped, proxied to the API Gateway)."""
 
 import os
 import sys
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -15,6 +13,9 @@ sys.path.insert(0, AI_AGENT_PATH)
 
 from tools.api_client import APIGatewayClient
 import httpx
+
+from auth import require_tenant
+from tenancy import Tenant
 
 logger = logging.getLogger(__name__)
 
@@ -34,49 +35,40 @@ class CreateCollectionRequest(BaseModel):
 
 
 @router.get("", response_model=List[Collection])
-async def list_collections(
-    x_api_key: str = Header(..., alias="X-API-Key")
-):
-    """
-    Get list of all collections
+async def list_collections(tenant: Tenant = Depends(require_tenant)):
+    """List the calling tenant's collections (proxied to the API Gateway).
 
-    This endpoint proxies to the API Gateway
+    Only collections owned by this tenant are returned, and the tenant prefix
+    is stripped from the names before they leave the backend.
     """
-    # Validate API key (placeholder - will be implemented properly)
-    if not x_api_key or x_api_key == "demo-api-key":
-        # In development, allow demo key
-        pass
-    else:
-        # TODO: Validate API key against database/service
-        pass
-
     try:
         async with APIGatewayClient() as client:
-            # Get collections from API Gateway
             collections_response = await client.list_collections()
 
-            # Convert to frontend format
             collections = [
                 Collection(
-                    name=col.collection_name,
+                    name=tenant.display(col.collection_name),
                     documentCount=col.vector_count,
                     createdAt=col.created_at or "2025-01-01T00:00:00Z",
                     description=col.description
                 )
                 for col in collections_response
+                if tenant.owns(col.collection_name)
             ]
 
-            logger.info(f"✅ Listed {len(collections)} collections")
+            logger.info(
+                "Listed %d collections for tenant '%s'", len(collections), tenant.tenant_id
+            )
             return collections
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"❌ Failed to list collections: {e}")
+        logger.error(f"Failed to list collections: {e}")
         raise HTTPException(
             status_code=e.response.status_code if e.response else 500,
             detail=f"Failed to list collections: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"❌ Unexpected error listing collections: {e}")
+        logger.error(f"Unexpected error listing collections: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
@@ -86,47 +78,37 @@ async def list_collections(
 @router.post("", response_model=Collection)
 async def create_collection(
     request: CreateCollectionRequest,
-    x_api_key: str = Header(..., alias="X-API-Key")
+    tenant: Tenant = Depends(require_tenant),
 ):
-    """
-    Create a new collection
-
-    This endpoint proxies to the API Gateway
-    """
-    # Validate API key
-    if not x_api_key or x_api_key == "demo-api-key":
-        pass
-    else:
-        # TODO: Validate API key
-        pass
-
+    """Create a collection within the calling tenant's namespace."""
+    namespaced = tenant.namespaced(request.name)
     try:
         async with APIGatewayClient() as client:
-            # Create collection via API Gateway
             collection_response = await client.create_collection(
-                name=request.name,
+                name=namespaced,
                 description=request.description
             )
 
-            # Convert to frontend format
             collection = Collection(
-                name=collection_response.collection_name,
+                name=tenant.display(collection_response.collection_name),
                 documentCount=collection_response.vector_count,
                 createdAt=collection_response.created_at or "2025-01-01T00:00:00Z",
                 description=collection_response.description
             )
 
-            logger.info(f"✅ Created collection: {request.name}")
+            logger.info(
+                "Created collection '%s' for tenant '%s'", namespaced, tenant.tenant_id
+            )
             return collection
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"❌ Failed to create collection: {e}")
+        logger.error(f"Failed to create collection: {e}")
         raise HTTPException(
             status_code=e.response.status_code if e.response else 500,
             detail=f"Failed to create collection: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"❌ Unexpected error creating collection: {e}")
+        logger.error(f"Unexpected error creating collection: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
@@ -136,31 +118,21 @@ async def create_collection(
 @router.delete("/{collection_name}")
 async def delete_collection(
     collection_name: str,
-    x_api_key: str = Header(..., alias="X-API-Key")
+    tenant: Tenant = Depends(require_tenant),
 ):
-    """
-    Delete a collection
-
-    This endpoint proxies to the API Gateway
-    """
-    # Validate API key
-    if not x_api_key or x_api_key == "demo-api-key":
-        pass
-    else:
-        # TODO: Validate API key
-        pass
-
+    """Delete one of the calling tenant's collections."""
+    namespaced = tenant.namespaced(collection_name)
     try:
         async with APIGatewayClient() as client:
-            # Delete collection via API Gateway
-            result = await client.delete_collection(collection_name)
+            await client.delete_collection(namespaced)
 
-            logger.info(f"✅ Deleted collection: {collection_name}")
+            logger.info(
+                "Deleted collection '%s' for tenant '%s'", namespaced, tenant.tenant_id
+            )
             return {"success": True, "message": f"Collection '{collection_name}' deleted"}
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"❌ Failed to delete collection: {e}")
-        # If 404, collection doesn't exist
+        logger.error(f"Failed to delete collection: {e}")
         if e.response and e.response.status_code == 404:
             raise HTTPException(
                 status_code=404,
@@ -171,9 +143,8 @@ async def delete_collection(
             detail=f"Failed to delete collection: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"❌ Unexpected error deleting collection: {e}")
+        logger.error(f"Unexpected error deleting collection: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
-
