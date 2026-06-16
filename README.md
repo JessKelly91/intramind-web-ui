@@ -224,10 +224,9 @@ services:
 
 ## 📚 Documentation
 
-- [Configuration Guide](./docs/CONFIGURATION.md) - Full configuration options
-- [API Reference](./docs/API.md) - Backend API documentation
-- [Development Guide](./docs/DEVELOPMENT.md) - Development workflow
-- [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment
+- [Quick Start](./QUICK_START.md) - Current local setup and run commands
+- [Testing Guide](./TESTING_GUIDE.md) - Manual smoke tests for widget and backend behavior
+- [Archived Phase History](./docs/archive/PHASE_HISTORY.md) - Historical implementation milestones
 
 ## 🧪 Testing
 

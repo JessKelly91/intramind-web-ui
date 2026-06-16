@@ -1,4 +1,4 @@
-# Phase 2 Testing Guide
+# Web UI Manual Testing Guide
 
 ## Quick Start Testing
 
@@ -80,7 +80,7 @@ INFO:     Application startup complete.
    script.src = 'http://localhost:8001/widget.js';
    script.onload = () => {
      IntraMind.init({
-       apiKey: 'demo-api-key',
+       apiKey: 'your-dev-api-key',
        collection: 'intramind_documents',
        primaryColor: '#667eea'
      });
@@ -141,7 +141,7 @@ curl http://localhost:8001/api/chat/health
 # Send chat message
 curl -X POST http://localhost:8001/api/chat \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: demo-api-key" \
+  -H "X-API-Key: your-dev-api-key" \
   -d '{
     "query": "What are the main topics in the documents?",
     "collection": "intramind_documents"
@@ -229,10 +229,10 @@ When testing, you should see these logs:
 ## Next Steps
 
 If everything works:
-1. ✅ Phase 2 is complete!
-2. 🎯 Ready for Phase 3 (Document Upload)
-3. 📝 Update main PROJECT_ROADMAP.md
-4. 🚀 Consider adding more test scenarios
+1. Record the tested backend/widget versions.
+2. Add or update automated tests for the scenarios that were manually verified.
+3. Re-run the root platform integration tests if backend behavior changed.
+4. Track remaining Docker/CI gaps in the main repo roadmap.
 
 If issues found:
 1. Check Prerequisites section
@@ -242,4 +242,4 @@ If issues found:
 
 ---
 
-*Need help? Check PHASE_2_COMPLETE.md for implementation details*
+*Need help? Check `README.md`, `QUICK_START.md`, and `docs/archive/PHASE_HISTORY.md` for current status and archived phase history.*

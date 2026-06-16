@@ -1,5 +1,20 @@
 # Web UI Phase History
 
+This archive preserves the historical phase milestones for the IntraMind Web UI without keeping phase-completion notes in the repository root.
+
+## Summary
+
+- **Phase 0: Setup** established the initial widget/backend/demo project structure.
+- **Phase 1: Infrastructure** brought up the FastAPI backend, widget build tooling, and local development flow.
+- **Phase 2: Chat UI** added the embeddable chat experience, message state, session persistence, citations, and basic error handling.
+- **Phase 3: Document Upload** added upload flows and backend integration for document ingestion.
+- **Phase 4: Collections** added collection browsing and management UI.
+
+## Current Status
+
+The web-ui is feature-complete for local demo usage, with chat, upload, collections, API-key auth, tenant namespacing, and rate limiting. Remaining work is focused on automation and release hardening: CI coverage, automated tests, Docker/root-compose validation, and production deployment documentation.
+# Web UI Phase History
+
 This archive summarizes the old phase-completion notes that previously lived at the top level of the `web-ui` submodule. The current public entry points are `README.md`, `QUICK_START.md`, and `TESTING_GUIDE.md`.
 
 ## Archived Phase Notes
